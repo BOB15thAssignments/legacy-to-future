@@ -1,0 +1,117 @@
+{
+  "module": "oldlib.dll",
+  "arch": "x64",
+  "real_module": "oldlib_real.dll",
+  "structs": {
+    "OLD_BUF": {
+      "size": 24,
+      "size_field": "size",
+      "fields": [
+        {"name": "size", "off": 0, "size": 4, "kind": "u32"},
+        {"name": "data", "off": 8, "size": 8, "kind": "ptr"},
+        {"name": "len", "off": 16, "size": 4, "kind": "u32"}
+      ]
+    },
+    "OLD_STAT": {
+      "size": 24,
+      "size_field": "size",
+      "fields": [
+        {"name": "size", "off": 0, "size": 4, "kind": "u32"},
+        {"name": "nproc", "off": 4, "size": 4, "kind": "u32"},
+        {"name": "nbytes", "off": 8, "size": 4, "kind": "u32"},
+        {"name": "checksum", "off": 12, "size": 4, "kind": "u32"},
+        {"name": "ticks", "off": 16, "size": 8, "kind": "u64"}
+      ]
+    }
+  },
+  "callbacks": {
+    "PROGRESS_CB": {
+      "ret": "i32",
+      "cc": "stdcall",
+      "args": [
+        {"name": "h", "kind": "handle", "dir": "in", "symbolize": "h"},
+        {"name": "pct", "kind": "i32", "dir": "in"}
+      ]
+    }
+  },
+  "symbols": {
+    "Init": {
+      "ordinal": 1,
+      "cc": "stdcall",
+      "ret": "i32",
+      "args": [
+        {"name": "tag", "kind": "str", "dir": "in"},
+        {"name": "reserved", "kind": "ptr", "dir": "in", "extent": {"fixed": 8}}
+      ]
+    },
+    "Open": {
+      "ordinal": 2,
+      "cc": "stdcall",
+      "ret": "handle",
+      "ret_symbolize": "h",
+      "ret_creates": "h",
+      "lasterr": true,
+      "args": [
+        {"name": "name", "kind": "str", "dir": "in"},
+        {"name": "mode", "kind": "u32", "dir": "in"}
+      ]
+    },
+    "SetCallback": {
+      "ordinal": 3,
+      "cc": "stdcall",
+      "ret": "i32",
+      "args": [
+        {"name": "h", "kind": "handle", "dir": "in", "symbolize": "h"},
+        {"name": "cb", "kind": "fnptr", "dir": "in", "callback": "PROGRESS_CB"}
+      ]
+    },
+    "Process": {
+      "ordinal": 4,
+      "cc": "stdcall",
+      "ret": "i32",
+      "args": [
+        {"name": "h", "kind": "handle", "dir": "in", "symbolize": "h"},
+        {"name": "buf", "kind": "ptr", "dir": "inout", "struct": "OLD_BUF",
+         "extent": {"struct": "OLD_BUF"}},
+        {"name": "flags", "kind": "i32", "dir": "in"}
+      ]
+    },
+    "Read": {
+      "ordinal": 5,
+      "cc": "stdcall",
+      "ret": "i32",
+      "args": [
+        {"name": "h", "kind": "handle", "dir": "in", "symbolize": "h"},
+        {"name": "out", "kind": "ptr", "dir": "out", "extent": {"arg": "cap"}},
+        {"name": "cap", "kind": "u32", "dir": "in"},
+        {"name": "out_len", "kind": "ptr", "dir": "out", "extent": {"fixed": 4}}
+      ]
+    },
+    "GetStats": {
+      "ordinal": 6,
+      "cc": "stdcall",
+      "ret": "i32",
+      "args": [
+        {"name": "h", "kind": "handle", "dir": "in", "symbolize": "h"},
+        {"name": "st", "kind": "ptr", "dir": "inout", "struct": "OLD_STAT",
+         "extent": {"struct": "OLD_STAT"}}
+      ]
+    },
+    "Close": {
+      "ordinal": 7,
+      "cc": "stdcall",
+      "ret": "i32",
+      "args": [
+        {"name": "h", "kind": "handle", "dir": "in", "symbolize": "h",
+         "releases": "h"}
+      ]
+    },
+    "Version": {
+      "ordinal": 8,
+      "noname": true,
+      "cc": "stdcall",
+      "ret": "u32",
+      "args": []
+    }
+  }
+}
