@@ -13,8 +13,8 @@ pe_extract.py — [1단계] PE 파싱: exe/dll이 의존하는 라이브러리·
 출력: 파이썬 dict. --json 옵션을 준 경우에만 JSON 파일로도 저장한다.
 
 사용법:
-    python3 pe_extract.py <파일경로>                  # 화면에 요약 출력
-    python3 pe_extract.py <파일경로> --json out.json  # JSON으로도 저장
+    python3 src/parse/pe_extract.py <파일경로>                  # 화면에 요약 출력
+    python3 src/parse/pe_extract.py <파일경로> --json out.json  # JSON으로도 저장
 """
 import sys
 import json
@@ -23,10 +23,12 @@ import pefile
 
 # PE 헤더에서 쓰는 상수 (매직넘버에 이름을 붙여둔 것)
 FLAG_IS_DLL = 0x2000          # Characteristics에 이 비트가 켜져 있으면 DLL
+# type 이 dll과 exe만 있는게 아니라서 이렇게 이분법 처리하면 위험합니다. 드라이버 파일을 exe 로 판단할수 있음.
+
 ARCHITECTURES = {
     0x014c: "x86",
     0x8664: "x64",
-    0xaa64: "arm64",
+    0xaa64: "arm64",    # comment: arm Arch는 우선 사용하지 않는것으로...
 }
 
 
@@ -195,7 +197,7 @@ def main():
 
     print_summary(info)
 
-    if args.json:
+    if args.json:   # 파싱결과물 파일로 저장 안한다고 하지 않았나? 왜 파일로 저장을 했지?
         with open(args.json, "w", encoding="utf-8") as f:
             json.dump(info, f, ensure_ascii=False, indent=2)
         print(f"\n→ JSON 저장: {args.json}")
