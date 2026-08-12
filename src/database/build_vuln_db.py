@@ -53,13 +53,6 @@ CREATE INDEX IF NOT EXISTS idx_detection      ON vulnerabilities(detection_metho
 # 검증된 시드 데이터
 VULNERABILITIES = [
     (
-        "CVE-2014-0160", "OpenSSL", "ssleay32.dll,libeay32.dll,libssl-1_1.dll,libcrypto-1_1.dll", "CRITICAL", 7.5,
-        "1.0.1g",
-        "[레거시 방치 악명] TLS Heartbeat 메모리 유출(Heartbleed). 패치 발표 수년 후에도 응용 프로그램 폴더에 구버전 DLL이 방치되어 감사에 상시 적발됨.",
-        "https://www.cisa.gov/news-events/alerts/2014/04/08/openssl-heartbleed-vulnerability-cve-2014-0160",
-        1, "CISA KEV + Field Audit Data", "version_only",
-    ),
-    (
         "CVE-2022-37434", "zlib", "zlib1.dll,zlib.dll,libz.dll", "CRITICAL", 9.8,
         "1.2.12",
         "gzip 헤더 extra field 처리 중 inflateGetHeader() 사용 시 inflate()에서 힙 버퍼 오버플로우.",
@@ -148,8 +141,6 @@ VULNERABLE_FUNCTIONS = [
     ("CVE-2018-14618", "Curl_ntlm_core_mk_nt_hash", 0, "verified"),
     ("CVE-2022-40303", "xmlParseNameComplex", 0, "verified"),
     ("CVE-2020-15999", "Load_SBit_Png", 0, "verified"),
-    ("CVE-2014-0160", "tls1_process_heartbeat", 0, "verified"),
-    ("CVE-2014-0160", "dtls1_process_heartbeat", 0, "verified"),
     ("CVE-2023-4863", "BuildHuffmanTable", 0, "verified"),
     ("CVE-2023-4863", "ReadHuffmanCodes", 0, "verified"),
     ("CVE-2022-23852", "XML_GetBuffer", 1, "verified"),
