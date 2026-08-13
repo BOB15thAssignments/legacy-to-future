@@ -9,10 +9,12 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "pefile>=2024.8.26",
+    "pywebview>=6.2.1",
 ]
 
 [project.scripts]
 legacy-to-future = "legacy_to_future:main"
+preflight-gui = "gui.__main__:main"
 
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]
