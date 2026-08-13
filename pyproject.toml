@@ -1,0 +1,19 @@
+[project]
+name = "legacy-to-future"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "oldmanshavingcode", email = "jeungminsooo@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pefile>=2024.8.26",
+]
+
+[project.scripts]
+legacy-to-future = "legacy_to_future:main"
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"
