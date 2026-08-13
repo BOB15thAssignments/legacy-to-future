@@ -108,7 +108,8 @@ def main() -> None:
     ns, target_args = _parse_args(sys.argv[1:])
     result = run(ns.exe, target_args, prompt=prompt_user, policy=config)
 
-    _print_report(result)
+    if not result.findings:
+        _print_report(result)
     if ns.json:
         write_json(result, ns.json)
 
