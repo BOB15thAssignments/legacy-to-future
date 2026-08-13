@@ -33,3 +33,9 @@ Windows 환경에서 실행 파일(PE)이 로드할 DLL/드라이버(SYS)를 실
    ```powershell
    uv run python -m preflight "C:\path\to\target.exe" -- --target-arg value
    ```
+
+5. gui 기능을 사용하기 위해서는
+
+   ```powershell
+   uv run preflight-gui
+   ```
