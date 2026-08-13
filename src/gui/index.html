@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>DLL 프리플라이트 게이트</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --panel: #171d2c;
+    --panel-2: #1f2740;
+    --border: #2a3350;
+    --text: #e6e9f2;
+    --muted: #8a92ab;
+    --accent: #5b8cff;
+    --danger: #ff5c72;
+    --warn: #ffb454;
+    --ok: #4fd68c;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+    -webkit-user-select: none; user-select: none;
+  }
+  #app { display: flex; flex-direction: column; height: 100%; padding: 20px; gap: 16px; }
+
+  header { display: flex; align-items: center; gap: 10px; }
+  header .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); }
+  header h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: .2px; }
+  header .sub { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  #dropzone {
+    flex: 1; border: 2px dashed var(--border); border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; cursor: pointer; transition: border-color .15s, background .15s;
+    text-align: center; padding: 20px;
+  }
+  #dropzone.drag { border-color: var(--accent); background: rgba(91,140,255,.08); }
+  #dropzone .icon { font-size: 40px; opacity: .8; }
+  #dropzone .main-text { font-size: 15px; font-weight: 500; }
+  #dropzone .hint { font-size: 12px; color: var(--muted); }
+  #dropzone .path { font-size: 12px; color: var(--muted); margin-top: 6px; word-break: break-all; max-width: 90%; }
+
+  .spinner {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #result-card {
+    flex: 1; display: none; flex-direction: column; gap: 12px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px; overflow: hidden;
+  }
+  #result-card.show { display: flex; }
+  #result-card .rc-head { display: flex; align-items: center; gap: 10px; }
+  #result-card .rc-head .badge {
+    font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+  }
+  .badge.ok { background: rgba(79,214,140,.15); color: var(--ok); }
+  .badge.warn { background: rgba(255,180,84,.15); color: var(--warn); }
+  .badge.danger { background: rgba(255,92,114,.15); color: var(--danger); }
+  #result-card .rc-path { font-size: 12px; color: var(--muted); word-break: break-all; }
+
+  #findings-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  .finding {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; font-size: 13px; line-height: 1.5;
+  }
+  .finding .f-head { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; }
+  .finding .f-dll { font-weight: 600; }
+  .finding .f-cve { color: var(--accent); font-size: 12px; }
+  .finding .f-tag {
+    font-size: 11px; padding: 1px 7px; border-radius: 999px; margin-left: auto;
+  }
+  .finding .f-detail { color: var(--muted); font-size: 12px; }
+  .finding .f-advice { margin-top: 6px; color: var(--text); }
+
+  .actions { display: flex; gap: 10px; justify-content: flex-end; }
+  button {
+    font-family: inherit; font-size: 13px; font-weight: 600; padding: 9px 18px;
+    border-radius: 9px; border: 1px solid var(--border); cursor: pointer;
+    background: var(--panel-2); color: var(--text); user-select: none;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  button:hover { filter: brightness(1.1); }
+  button:active { filter: brightness(.95); }
+
+  #reset-btn { align-self: flex-start; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="dot"></div>
+    <h1>DLL 프리플라이트 게이트</h1>
+    <div class="sub">실행 전 취약 DLL 로드 여부를 미리 예측합니다</div>
+  </header>
+
+  <div id="dropzone">
+    <div class="icon">📦</div>
+    <div class="main-text">exe 파일을 여기로 드래그하세요</div>
+    <div class="hint">또는 클릭해서 파일 선택</div>
+    <div class="path" id="dz-path"></div>
+  </div>
+
+  <div id="result-card">
+    <div class="rc-head">
+      <span class="badge" id="rc-badge">-</span>
+      <span id="rc-title" style="font-weight:600;"></span>
+    </div>
+    <div class="rc-path" id="rc-path"></div>
+    <div id="findings-list"></div>
+    <div class="actions" id="rc-actions"></div>
+    <button id="reset-btn" style="display:none;">다른 파일 검사</button>
+  </div>
+</div>
+
+<script>
+  const dropzone = document.getElementById('dropzone');
+  const dzPath = document.getElementById('dz-path');
+  const resultCard = document.getElementById('result-card');
+  const rcBadge = document.getElementById('rc-badge');
+  const rcTitle = document.getElementById('rc-title');
+  const rcPath = document.getElementById('rc-path');
+  const findingsList = document.getElementById('findings-list');
+  const rcActions = document.getElementById('rc-actions');
+  const resetBtn = document.getElementById('reset-btn');
+
+  // 실제 파일 드롭 처리는 Python 쪽(webview.dom DOMEventHandler)이 담당한다 —
+  // 이 리스너들은 "드래그 중" 시각 효과와 기본 브라우저 동작(파일이 새 탭으로 열리는 것) 방지용.
+  ['dragenter', 'dragover'].forEach(evt =>
+    dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('drag'); })
+  );
+  ['dragleave', 'drop'].forEach(evt =>
+    dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('drag'); })
+  );
+
+  dropzone.addEventListener('click', () => {
+    if (window.pywebview) window.pywebview.api.pick_file();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    resultCard.classList.remove('show');
+    dropzone.style.display = 'flex';
+    dzPath.textContent = '';
+    findingsList.innerHTML = '';
+    rcActions.innerHTML = '';
+    resetBtn.style.display = 'none';
+  });
+
+  function fileName(p) {
+    return p.split(/[\\/]/).pop();
+  }
+
+  function onAnalyzing(path) {
+    dropzone.style.display = 'none';
+    resultCard.classList.add('show');
+    rcBadge.className = 'badge warn';
+    rcBadge.textContent = '분석 중';
+    rcTitle.textContent = fileName(path);
+    rcPath.textContent = path;
+    findingsList.innerHTML = '<div class="finding"><div class="spinner" style="margin:6px auto;"></div></div>';
+    rcActions.innerHTML = '';
+    resetBtn.style.display = 'none';
+  }
+
+  function severityClass(f) {
+    if (f.isPotential) return 'warn';
+    return 'danger';
+  }
+
+  function renderFindings(findings) {
+    findingsList.innerHTML = findings.map(f => `
+      <div class="finding">
+        <div class="f-head">
+          <span class="f-dll">${f.dllName}</span>
+          <span class="f-cve">${f.cveId ?? ''}</span>
+          <span class="f-tag badge ${severityClass(f)}">${f.isPotential ? '잠재 취약' : '취약'}</span>
+        </div>
+        <div class="f-detail">${f.resolvedPath} · 버전 ${f.detectedVersion ?? '미상'}${f.fixedVersion ? ' · 패치 버전 ' + f.fixedVersion : ''}</div>
+        <div class="f-detail">${f.reason ?? ''}</div>
+        <div class="f-advice">${f.advice ?? ''}</div>
+      </div>
+    `).join('');
+  }
+
+  // pipeline.run()이 findings를 발견해 사용자 판단을 요청하는 시점 (prompt 콜백).
+  function onFindings(result) {
+    rcBadge.className = 'badge danger';
+    rcBadge.textContent = `취약 DLL ${result.findings.length}건 예측됨`;
+    renderFindings(result.findings);
+    rcActions.innerHTML = '';
+
+    const blockBtn = document.createElement('button');
+    blockBtn.className = 'danger';
+    blockBtn.textContent = '차단';
+    blockBtn.onclick = () => { window.pywebview.api.submit_decision(false); rcBadge.textContent = '결정 전달됨…'; };
+
+    const allowBtn = document.createElement('button');
+    allowBtn.className = 'primary';
+    allowBtn.textContent = '그래도 실행';
+    allowBtn.onclick = () => { window.pywebview.api.submit_decision(true); rcBadge.textContent = '결정 전달됨…'; };
+
+    rcActions.appendChild(blockBtn);
+    rcActions.appendChild(allowBtn);
+  }
+
+  const DECISION_LABEL = {
+    no_risk: ['ok', '취약 DLL 없음 — 실행됨'],
+    allowed: ['ok', '사용자 승인 — 실행됨'],
+    aborted: ['danger', '사용자 차단 — 실행되지 않음'],
+    blocked_on_error: ['danger', '판정 중 오류 — 안전하게 차단됨'],
+    allowed_on_error: ['warn', '판정 중 오류 — 정책상 허용되어 실행됨'],
+  };
+
+  // pipeline.run() 완료 시점 (findings 유무와 무관하게 항상 호출됨).
+  function onResult(result) {
+    const [cls, label] = DECISION_LABEL[result.decision] ?? ['warn', result.decision];
+    rcBadge.className = 'badge ' + cls;
+    rcBadge.textContent = label;
+    if (result.findings.length) {
+      renderFindings(result.findings);
+    } else {
+      findingsList.innerHTML = '<div class="finding">이 실행 파일이 로드할 것으로 예측되는 DLL 중 알려진 취약점과 일치하는 항목이 없습니다.</div>';
+    }
+    if (result.exitCode !== null && result.exitCode !== undefined) {
+      const el = document.createElement('div');
+      el.className = 'finding';
+      el.textContent = `대상 프로세스 종료 코드: ${result.exitCode}`;
+      findingsList.appendChild(el);
+    }
+    rcActions.innerHTML = '';
+    resetBtn.style.display = 'inline-block';
+  }
+
+  function onError(message) {
+    rcBadge.className = 'badge danger';
+    rcBadge.textContent = '분석 실패';
+    findingsList.innerHTML = `<div class="finding">${message}</div>`;
+    rcActions.innerHTML = '';
+    resetBtn.style.display = 'inline-block';
+  }
+</script>
+</body>
+</html>
